@@ -1,0 +1,40 @@
+// ───────────────────────────────────────────────────────────────────────────────
+// 1) Define your datasource (▶︎ required)
+// ───────────────────────────────────────────────────────────────────────────────
+datasource db {
+  provider = "postgresql" // or "mysql", "sqlite", etc.
+  url      = env("DATABASE_URL") // must match .env in same folder
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// 2) Define your client generator (▶︎ required)
+// ───────────────────────────────────────────────────────────────────────────────
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// 3) Your models (with proper relations)
+// ───────────────────────────────────────────────────────────────────────────────
+model Lead {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  source    String
+  status    String   @default("Cold")
+  notes     String?
+  createdAt DateTime @default(now())
+
+  // ← the opposite side of the relation
+  appointments Appointment[]
+}
+
+model Appointment {
+  id        String   @id @default(uuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id])
+  startTime DateTime
+  endTime   DateTime
+  createdAt DateTime @default(now())
+}
