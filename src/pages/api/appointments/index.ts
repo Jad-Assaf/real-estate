@@ -5,29 +5,25 @@ import { PrismaClient, Prisma } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-// 1) Build a typed “include” object for Appointment → include its Lead
-const appointmentWithLeadInclude = Prisma.validator<Prisma.AppointmentDefaultArgs>()({
+// 1) Create a single `includeLead` object that is both the runtime arg and the type-arg
+const includeLead = {
   include: { lead: true }
-})
+} satisfies Prisma.AppointmentFindManyArgs
 
-// 2) Derive the return type from that include
-type AppointmentWithLead = Prisma.AppointmentGetPayload<typeof appointmentWithLeadInclude>
+// 2) Derive the payload type from that object
+type AppointmentWithLead = Prisma.AppointmentGetPayload<typeof includeLead>
 
-// 3) Define the shape we’ll actually return in the JSON
+// 3) Define the shape we’ll return
 type OutputItem = { id: string; leadName: string; startTime: Date }
 
-// 4) API handler
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<OutputItem[] | { error: string }>
 ) {
   if (req.method === 'GET') {
-    // Tell TS that we expect AppointmentWithLead[]
-    const appts: AppointmentWithLead[] = await prisma.appointment.findMany({
-      include: { lead: true }
-    })
+    // now we pass `includeLead` directly into findMany  
+    const appts: AppointmentWithLead[] = await prisma.appointment.findMany(includeLead)
 
-    // Map to the simpler output shape
     const result: OutputItem[] = appts.map(a => ({
       id: a.id,
       leadName: a.lead.name,
